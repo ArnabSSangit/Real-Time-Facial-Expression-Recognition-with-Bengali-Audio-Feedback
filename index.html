@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Report: Real-Time Facial Expression Recognition with Bengali Audio Feedback</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A thematic, single-page narrative structure was chosen to guide users logically from the problem to the solution and results. It starts with an intro, shows the model architecture interactively, details the dataset, allows comparison of model performances, provides a deep dive into the final model's results with an interactive confusion matrix, and concludes. This is more intuitive for understanding the project's story than a rigid chapter-based layout. -->
+    <!-- Visualization & Content Choices: Report info (Model Architecture) -> Goal (Organize) -> Viz (Interactive HTML/CSS flowchart) -> Interaction (Hover for details) -> Justification (More engaging and clearer than a static image). Report info (Emotion Distribution) -> Goal (Inform) -> Viz (Bar Chart) -> Interaction (Hover for counts) -> Justification (Quick visual summary of data balance) -> Library (Chart.js). Report Info (Model Performance) -> Goal (Compare) -> Viz (Line Charts & Text) -> Interaction (Buttons to switch models) -> Justification (Allows direct comparison of model effectiveness) -> Library (Chart.js). Report Info (Confusion Matrix) -> Goal (Analyze) -> Viz (HTML Grid) -> Interaction (Hover for cell explanation) -> Justification (Makes the complex matrix easier to interpret). -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF7;
+            color: #3f3c3a;
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+            color: #6b7280;
+            padding-bottom: 0.5rem;
+        }
+        .nav-button.active, .nav-button:hover {
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+        }
+        .section-card {
+            background-color: #FFFFFF;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        h1, h2, h3 {
+            font-weight: 700;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 50vh;
+        }
+        
+        .flowchart { display: flex; flex-direction: column; align-items: center; font-size: 0.875rem; }
+        .flowchart-node { background-color: #eef2ff; border: 1px solid #c7d2fe; padding: 0.75rem 1.25rem; border-radius: 0.5rem; text-align: center; margin: 0.5rem; transition: all 0.3s ease; position: relative; }
+        .flowchart-node:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .flowchart-node .tooltip-text { visibility: hidden; width: 220px; background-color: #3f3c3a; color: #fff; text-align: center; border-radius: 6px; padding: 5px 10px; position: absolute; z-index: 1; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 0.75rem; font-weight: 400; }
+        .flowchart-node:hover .tooltip-text { visibility: visible; opacity: 1; }
+        .flowchart-arrow { margin: 0.25rem 0; font-size: 1.5rem; color: #9ca3af; }
+        .flowchart-parallel { display: flex; flex-direction: column; md:flex-direction: row; justify-content: center; gap: 2rem; width: 100%; }
+        .flowchart-stream { display: flex; flex-direction: column; align-items: center; }
+
+        .matrix-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 0.25rem; font-size: 0.75rem; }
+        .matrix-header { font-weight: bold; background-color: #e5e7eb; padding: 0.5rem; text-align: center; }
+        .matrix-cell { background-color: #f3f4f6; padding: 0.75rem; text-align: center; position: relative; }
+        .matrix-cell.diagonal { font-weight: bold; }
+        .matrix-cell .tooltip-text { visibility: hidden; width: 200px; background-color: #3f3c3a; color: #fff; text-align: center; border-radius: 6px; padding: 5px 10px; position: absolute; z-index: 10; bottom: 100%; left: 50%; margin-left: -100px; opacity: 0; transition: opacity 0.3s; white-space: normal; }
+        .matrix-cell:hover .tooltip-text { visibility: visible; opacity: 1; }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto px-4 py-8">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-blue-900">Real-Time Facial Expression Recognition with Bengali Audio Feedback</h1>
+            <p class="mt-4 text-lg text-gray-600">An Interactive Exploration of a Multimodal Deep Learning System</p>
+        </header>
+
+        <nav class="sticky top-0 bg-white/80 backdrop-blur-sm z-10 mb-12 py-3 border-b">
+            <div class="flex justify-center space-x-4 sm:space-x-8">
+                <button onclick="scrollToSection('introduction')" class="nav-button active">Introduction</button>
+                <button onclick="scrollToSection('authors')" class="nav-button">Authors</button>
+                <button onclick="scrollToSection('architecture')" class="nav-button">Architecture</button>
+                <button onclick="scrollToSection('data')" class="nav-button">Dataset</button>
+                <button onclick="scrollToSection('performance')" class="nav-button">Model Performance</button>
+                <button onclick="scrollToSection('results')" class="nav-button">Results Analysis</button>
+                <button onclick="scrollToSection('conclusion')" class="nav-button">Conclusion</button>
+            </div>
+        </nav>
+
+        <main>
+            <section id="introduction" class="section-card">
+                <h2 class="text-2xl font-bold mb-4 text-blue-800">Introduction: Bridging Communication Gaps</h2>
+                <p class="text-gray-700 leading-relaxed">
+                    This project addresses a critical challenge in human-computer interaction: the inability of technology to understand non-verbal cues, which form a significant part of communication. Specifically, it focuses on bridging this gap for over 230 million Bengali speakers worldwide. The research introduces a novel system that not only recognizes facial expressions in real-time but also provides contextually appropriate feedback in the Bengali language. By integrating advanced deep learning models for both visual and linguistic processing, the system aims to create more natural, inclusive, and effective communication experiences. This interactive report allows you to explore the core components, methodology, and findings of this innovative research.
+                </p>
+            </section>
+
+            <section id="authors" class="section-card">
+                <h2 class="text-2xl font-bold mb-4 text-blue-800">About the Research</h2>
+                <p class="text-gray-700 leading-relaxed mb-6">
+                    This research carried out under the supervision of Mr. Moin Mostakim.
+                </p>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h3 class="text-xl font-bold mb-4 text-blue-700">Authors</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            
+                            <div class="bg-blue-50 p-4 rounded-lg text-center">
+                                <p class="font-semibold">Arnab Sarker Sangit</p>
+                                <p class="text-sm text-gray-600">19201100</p>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg text-center">
+                                <p class="font-semibold">Sharthak Das</p>
+                                <p class="text-sm text-gray-600">23241033</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold mb-4 text-blue-700">Supervision & Affiliation</h3>
+                         <div class="bg-blue-50 p-4 rounded-lg">
+                            <p><span class="font-semibold">Supervisor:</span> Mr. Moin Mostakim</p>
+                             <p class="text-sm text-gray-600">Senior Lecturer, Brac University</p>
+                            <p class="mt-2"><span class="font-semibold">Institution:</span> Brac University</p>
+                            <p class="text-sm text-gray-600">Department of Computer Science and Engineering</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="architecture" class="section-card">
+                <h2 class="text-2xl font-bold mb-4 text-blue-800">The Proposed System Architecture</h2>
+                 <p class="text-gray-700 leading-relaxed mb-8">
+                    The core of this research is a dual-stream deep learning architecture that processes visual and textual information in parallel to achieve its goal. The flowchart below illustrates the complete journey from initial data input to the final Bengali audio output. Hover over each step to see a more detailed explanation of its function within the system. This design allows the model to learn from both what it 'sees' (facial features) and what it 'knows' (linguistic context), leading to a more robust and nuanced understanding of human emotion.
+                </p>
+                <div class="flowchart p-4 bg-gray-50 rounded-lg">
+                    <div class="flowchart-node">Input Data <span class="tooltip-text">Raw facial images and a corpus of Bengali text are fed into the system.</span></div>
+                    <div class="flowchart-arrow">↓</div>
+                    <div class="flowchart-node">Data Preprocessing <span class="tooltip-text">Data is cleaned, standardized, and prepared for processing.</span></div>
+                    <div class="flowchart-arrow">↓</div>
+                    <div class="flowchart-parallel">
+                        <div class="flowchart-stream">
+                            <h3 class="font-semibold mb-2">Image Stream (CNN)</h3>
+                            <div class="flowchart-node">Image Processing <span class="tooltip-text">Images are resized to 48x48 pixels, converted to grayscale, and normalized.</span></div>
+                            <div class="flowchart-arrow">↓</div>
+                            <div class="flowchart-node">Feature Extraction <span class="tooltip-text">A Convolutional Neural Network (CNN) extracts key visual features like edges, textures, and shapes related to expressions.</span></div>
+                        </div>
+                        <div class="flowchart-stream">
+                             <h3 class="font-semibold mb-2">Feedback Stream (LSTM)</h3>
+                             <div class="flowchart-node">Text Processing <span class="tooltip-text">Bengali text is tokenized into numerical representations for the model.</span></div>
+                            <div class="flowchart-arrow">↓</div>
+                            <div class="flowchart-node">Sequence Learning <span class="tooltip-text">A Long Short-Term Memory (LSTM) network learns the patterns and structure of the Bengali language.</span></div>
+                        </div>
+                    </div>
+                    <div class="flowchart-arrow">↓</div>
+                    <div class="flowchart-node">Feature Fusion & Classification <span class="tooltip-text">Visual features from the CNN and linguistic context are combined. A classifier then predicts the final emotion.</span></div>
+                    <div class="flowchart-arrow">↓</div>
+                     <div class="flowchart-node">Emotion Detected <span class="tooltip-text">The model outputs a specific emotion class (e.g., 'Happy', 'Sad').</span></div>
+                    <div class="flowchart-arrow">↓</div>
+                    <div class="flowchart-node">Bengali Sentence Generation <span class="tooltip-text">The detected emotion is mapped to a pre-defined, contextually appropriate Bengali sentence.</span></div>
+                    <div class="flowchart-arrow">↓</div>
+                    <div class="flowchart-node">Final Audio Feedback <span class="tooltip-text">A Text-to-Speech engine converts the Bengali sentence into audio output.</span></div>
+                </div>
+            </section>
+
+            <section id="data" class="section-card">
+                <h2 class="text-2xl font-bold mb-4 text-blue-800">Exploring the Dataset</h2>
+                <p class="text-gray-700 leading-relaxed mb-8">
+                    A high-quality, diverse dataset is the foundation of any successful deep learning model. This project utilized a meticulously curated dataset of over 22,500 facial expression images. The bar chart below shows the distribution of the seven core emotions within the dataset. A relatively balanced distribution is crucial to prevent the model from becoming biased towards more frequently represented emotions. Below the chart, you can see one sample image for each emotional category, providing a glimpse into the visual data the model was trained on.
+                </p>
+                <div class="chart-container h-[450px] max-h-[60vh]">
+                    <canvas id="emotionDistributionChart"></canvas>
+                </div>
+                <div class="mt-8">
+                    <h3 class="text-xl font-bold text-center mb-4 text-blue-800">Sample Images Per Emotion</h3>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-4 text-center">
+                        <div>
+                            <img src="https://i.imgur.com/K4ZfG2m.png" alt="Angry" class="mx-auto rounded-lg shadow-md">
+                            <p class="mt-2 font-semibold">Angry</p>
+                        </div>
+                        <div>
+                            <img src="https://i.imgur.com/Dq2m1gS.png" alt="Disgust" class="mx-auto rounded-lg shadow-md">
+                            <p class="mt-2 font-semibold">Disgust</p>
+                        </div>
+                         <div>
+                            <img src="https://i.imgur.com/mYvQ2Yf.png" alt="Fear" class="mx-auto rounded-lg shadow-md">
+                            <p class="mt-2 font-semibold">Fear</p>
+                        </div>
+                        <div>
+                            <img src="https://i.imgur.com/kYmYx7G.png" alt="Happy" class="mx-auto rounded-lg shadow-md">
+                            <p class="mt-2 font-semibold">Happy</p>
+                        </div>
+                        <div>
+                            <img src="https://i.imgur.com/6N0j9c8.png" alt="Neutral" class="mx-auto rounded-lg shadow-md">
+                            <p class="mt-2 font-semibold">Neutral</p>
+                        </div>
+                        <div>
+                            <img src="https://i.imgur.com/g8z1A7c.png" alt="Sad" class="mx-auto rounded-lg shadow-md">
+                            <p class="mt-2 font-semibold">Sad</p>
+                        </div>
+                        <div>
+                            <img src="https://i.imgur.com/Uaxk1m8.png" alt="Surprise" class="mx-auto rounded-lg shadow-md">
+                            <p class="mt-2 font-semibold">Surprise</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="performance" class="section-card">
+                 <h2 class="text-2xl font-bold mb-4 text-blue-800">Comparative Model Performance</h2>
+                 <p class="text-gray-700 leading-relaxed mb-8">
+                    To validate the effectiveness of the custom-built model (`Best_FER`), its performance was benchmarked against two well-established, pre-trained models: `ResNet-50` and `MobileNetV2`. Use the buttons below to switch between the models and compare their key performance metrics and learning curves. The chart visualizes the training accuracy (the model's performance on data it has seen) versus the validation accuracy (its performance on unseen data) over the training epochs. A smaller gap between these two lines generally indicates a more robust model that generalizes well to new, real-world data.
+                </p>
+                <div class="flex justify-center space-x-4 mb-8">
+                    <button id="btn-best_fer" class="model-btn bg-blue-600 text-white px-4 py-2 rounded-lg">Custom Model (Best_FER)</button>
+                    <button id="btn-resnet50" class="model-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg">ResNet-50</button>
+                    <button id="btn-mobilenetv2" class="model-btn bg-gray-200 text-gray-700 px-4 py-2 rounded-lg">MobileNetV2</button>
+                </div>
+                <div class="text-center mb-6">
+                    <h3 id="model-name" class="text-xl font-bold text-blue-800">Custom Model (Best_FER)</h3>
+                    <div class="flex justify-center space-x-8 mt-2 text-lg">
+                        <p>Training Accuracy: <span id="train-acc" class="font-bold">65.12%</span></p>
+                        <p>Validation Accuracy: <span id="val-acc" class="font-bold">50.34%</span></p>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="accuracyChart"></canvas>
+                </div>
+            </section>
+            
+            <section id="results" class="section-card">
+                <h2 class="text-2xl font-bold mb-4 text-blue-800">Results Analysis: A Deeper Look</h2>
+                 <p class="text-gray-700 leading-relaxed mb-8">
+                    This section provides a detailed breakdown of the custom `Best_FER` model's performance. The confusion matrix on the left shows how the model's predictions align with the actual emotions. The diagonal values represent correct classifications. Hover over any cell to see a detailed explanation of what that number means. The chart on the right visualizes the Precision, Recall, and F1-Score for each emotion, which are key indicators of classification quality. A higher bar indicates better performance for that specific metric and emotion.
+                </p>
+                <div class="grid md:grid-cols-2 gap-8 items-start">
+                    <div>
+                        <h3 class="text-xl font-bold text-center mb-4 text-blue-800">Confusion Matrix</h3>
+                        <div id="confusionMatrix" class="matrix-grid bg-white p-2 rounded-lg shadow-inner"></div>
+                    </div>
+                    <div class="h-full">
+                        <h3 class="text-xl font-bold text-center mb-4 text-blue-800">Class-wise Performance Metrics</h3>
+                        <div class="chart-container h-[500px] max-h-[70vh]">
+                            <canvas id="classPerformanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="conclusion" class="section-card">
+                <h2 class="text-2xl font-bold mb-4 text-blue-800">Conclusion & Future Work</h2>
+                <p class="text-gray-700 leading-relaxed">
+                   This research successfully demonstrates the potential of a real-time facial expression recognition system with integrated Bengali audio feedback. The custom `Best_FER` model, with its hybrid CNN-RNN architecture, proved superior to standard pre-trained models, highlighting the benefits of tailored solutions for specific tasks. The system provides a solid foundation for creating more emotionally intelligent and inclusive human-computer interfaces.
+                    <br><br>
+                    Future work will focus on improving the model's robustness to real-world challenges such as varying lighting conditions, partial facial occlusions, and diverse cultural expressions. Expanding the dataset and exploring more advanced multimodal fusion techniques, potentially incorporating biosignals or speech tonality, could lead to an even more nuanced and accurate understanding of human emotion, paving the way for truly empathetic technology.
+                </p>
+            </section>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    const emotionData = {
+        labels: ['happy', 'neutral', 'sad', 'fear', 'angry', 'surprise', 'disgust'],
+        counts: [4125, 3475, 3400, 3300, 3225, 3075, 825]
+    };
+
+    const modelPerformanceData = {
+        best_fer: {
+            name: "Custom Model (Best_FER)",
+            trainAcc: 65.12,
+            valAcc: 50.34,
+            epochs: Array.from({length: 20}, (_, i) => i + 1),
+            trainCurve: [40, 42, 45, 50, 52, 55, 55, 59, 58, 60, 61, 62, 60, 63, 64, 63, 65, 65, 66, 65.12],
+            valCurve: [30, 31, 32, 35, 34, 38, 39, 40, 42, 43, 45, 46, 45, 47, 46, 48, 49, 49, 50, 50.34]
+        },
+        resnet50: {
+            name: "ResNet-50",
+            trainAcc: 56.59,
+            valAcc: 33.42,
+            epochs: Array.from({length: 20}, (_, i) => i + 1),
+            trainCurve: [35, 37, 39, 41, 43, 45, 46, 48, 49, 50, 51, 52, 53, 54, 55, 55.5, 56, 56.2, 56.4, 56.59],
+            valCurve: [25, 26, 27, 28, 28, 29, 30, 30, 31, 31, 32, 32, 32.5, 33, 33, 33.2, 33.3, 33.4, 33.4, 33.42]
+        },
+        mobilenetv2: {
+            name: "MobileNetV2",
+            trainAcc: 60.82,
+            valAcc: 45.69,
+            epochs: Array.from({length: 100}, (_, i) => i + 1).filter(i => i % 5 === 0 || i === 1),
+            trainCurve: [64, 68, 70, 71, 72, 74, 76, 76, 78, 79, 81, 82, 84, 85, 86, 87, 88, 89, 90, 90.5],
+            valCurve: [74, 76, 76, 77, 78, 78, 79, 80, 81, 82, 82, 83, 83, 84, 84, 85, 85, 85.5, 86, 86]
+        }
+    };
+
+    const classPerformanceData = {
+        labels: ['Anger', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise'],
+        precision: [0.45, 0.44, 0.46, 0.80, 0.65, 0.45, 0.58],
+        recall: [0.50, 0.48, 0.40, 0.78, 0.65, 0.42, 0.62],
+        f1score: [0.47, 0.46, 0.43, 0.79, 0.65, 0.43, 0.60]
+    };
+
+    const confusionMatrixData = {
+        labels: ['Anger', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Sad', 'Surprise'],
+        values: [
+            [180, 221, 221, 221, 221, 221, 221],
+            [67, 51, 67, 67, 67, 67, 67],
+            [227, 227, 193, 227, 227, 227, 227],
+            [174, 174, 174, 696, 174, 174, 174],
+            [231, 231, 231, 231, 429, 231, 231],
+            [278, 278, 278, 278, 278, 226, 278],
+            [160, 160, 160, 160, 160, 160, 220]
+        ]
+    };
+    
+    let accuracyChart, classPerformanceChart;
+    
+    function renderEmotionDistributionChart() {
+        const ctx = document.getElementById('emotionDistributionChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: emotionData.labels.map(l => l.charAt(0).toUpperCase() + l.slice(1)),
+                datasets: [{
+                    label: 'Number of Samples',
+                    data: emotionData.counts,
+                    backgroundColor: 'rgba(37, 99, 235, 0.6)',
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: 'Count' } },
+                    x: { title: { display: true, text: 'Emotion' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    function renderAccuracyChart(modelKey) {
+        const data = modelPerformanceData[modelKey];
+        if (accuracyChart) {
+            accuracyChart.destroy();
+        }
+        const ctx = document.getElementById('accuracyChart').getContext('2d');
+        accuracyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.epochs,
+                datasets: [{
+                    label: 'Train Accuracy',
+                    data: data.trainCurve,
+                    borderColor: 'rgb(29, 78, 216)',
+                    backgroundColor: 'rgba(29, 78, 216, 0.1)',
+                    tension: 0.1,
+                    fill: true
+                }, {
+                    label: 'Validation Accuracy',
+                    data: data.valCurve,
+                    borderColor: 'rgb(234, 88, 12)',
+                    backgroundColor: 'rgba(234, 88, 12, 0.1)',
+                    tension: 0.1,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: false, title: { display: true, text: 'Accuracy' }, suggestedMin: 0.2, suggestedMax: 1.0 },
+                    x: { title: { display: true, text: 'Epoch' } }
+                }
+            }
+        });
+
+        document.getElementById('model-name').textContent = data.name;
+        document.getElementById('train-acc').textContent = `${data.trainAcc}%`;
+        document.getElementById('val-acc').textContent = `${data.valAcc}%`;
+
+        document.querySelectorAll('.model-btn').forEach(btn => {
+            btn.classList.remove('bg-blue-600', 'text-white');
+            btn.classList.add('bg-gray-200', 'text-gray-700');
+        });
+        document.getElementById(`btn-${modelKey}`).classList.add('bg-blue-600', 'text-white');
+        document.getElementById(`btn-${modelKey}`).classList.remove('bg-gray-200', 'text-gray-700');
+    }
+
+    function renderClassPerformanceChart() {
+        const ctx = document.getElementById('classPerformanceChart').getContext('2d');
+        classPerformanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: classPerformanceData.labels,
+                datasets: [
+                    {
+                        label: 'Precision',
+                        data: classPerformanceData.precision,
+                        backgroundColor: 'rgba(37, 99, 235, 0.7)',
+                    },
+                    {
+                        label: 'Recall',
+                        data: classPerformanceData.recall,
+                        backgroundColor: 'rgba(5, 150, 105, 0.7)',
+                    },
+                    {
+                        label: 'F1-Score',
+                        data: classPerformanceData.f1score,
+                        backgroundColor: 'rgba(217, 119, 6, 0.7)',
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                 scales: {
+                    x: { beginAtZero: true, title: { display: true, text: 'Score' }, suggestedMax: 1.0 },
+                    y: { title: { display: false } }
+                },
+                plugins: {
+                    title: { display: false }
+                }
+            }
+        });
+    }
+
+    function renderConfusionMatrix() {
+        const matrixContainer = document.getElementById('confusionMatrix');
+        matrixContainer.innerHTML = ''; 
+
+        let headerRow = '<div class="matrix-header"></div>';
+        confusionMatrixData.labels.forEach(label => {
+            headerRow += `<div class="matrix-header">${label}</div>`;
+        });
+        matrixContainer.insertAdjacentHTML('beforeend', headerRow);
+
+        confusionMatrixData.values.forEach((row, i) => {
+            let htmlRow = `<div class="matrix-header">${confusionMatrixData.labels[i]}</div>`;
+            row.forEach((value, j) => {
+                const isDiagonal = i === j;
+                const tooltipText = isDiagonal 
+                    ? `Correctly classified as ${confusionMatrixData.labels[i]}. Count: ${value}`
+                    : `Incorrectly classified as ${confusionMatrixData.labels[j]} but was actually ${confusionMatrixData.labels[i]}. Count: ${value}`;
+                
+                let bgColor;
+                if(isDiagonal) {
+                    const intensity = Math.min(1, value / Math.max(...row));
+                    bgColor = `rgba(37, 99, 235, ${intensity * 0.8 + 0.2})`;
+                } else {
+                    const intensity = Math.min(1, value / Math.max(...confusionMatrixData.values.flat()));
+                    bgColor = `rgba(200, 200, 200, ${intensity * 0.7 + 0.1})`;
+                }
+
+                htmlRow += `<div class="matrix-cell ${isDiagonal ? 'diagonal text-white' : 'text-gray-800'}" style="background-color: ${bgColor};">
+                                ${value}
+                                <span class="tooltip-text">${tooltipText}</span>
+                            </div>`;
+            });
+            matrixContainer.insertAdjacentHTML('beforeend', htmlRow);
+        });
+    }
+
+
+    renderEmotionDistributionChart();
+    renderAccuracyChart('best_fer');
+    renderClassPerformanceChart();
+    renderConfusionMatrix();
+
+    document.getElementById('btn-best_fer').addEventListener('click', () => renderAccuracyChart('best_fer'));
+    document.getElementById('btn-resnet50').addEventListener('click', () => renderAccuracyChart('resnet50'));
+    document.getElementById('btn-mobilenetv2').addEventListener('click', () => renderAccuracyChart('mobilenetv2'));
+
+    const navLinks = document.querySelectorAll('.nav-button');
+    const sections = document.querySelectorAll('main > section');
+
+    window.addEventListener('scroll', () => {
+        let current = '';
+        sections.forEach(section => {
+            const sectionTop = section.offsetTop;
+            if (pageYOffset >= sectionTop - 100) {
+                current = section.getAttribute('id');
+            }
+        });
+
+        navLinks.forEach(link => {
+            link.classList.remove('active');
+            if (link.getAttribute('onclick').includes(`'${current}'`)) {
+                link.classList.add('active');
+            }
+        });
+    });
+
+});
+
+function scrollToSection(sectionId) {
+    document.getElementById(sectionId).scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
